@@ -23,7 +23,17 @@ if(Yii::$app->user->isGuest) {
         echo "Вы пришли сами";
     }
 }else{
-    echo "Ваша ссылка: ".Yii::$app->homeUrl."?ref=".$userModels::findIdentity(Yii::$app->user->getId())->referelCode;
+    $user = $userModels::findIdentity(Yii::$app->user->getId());
+    echo "Ваша ссылка: ".Yii::$app->homeUrl."?ref=".$user->referelCode."<br/>";
+    if($user->referal > 0 ) {
+        $userReferel = $userModels::findIdentity($user->referal);
+        echo "Вас пригласил " . $userReferel->username."<br/>";
+    }
+    echo "Вы пригласили: <br/>";
+    foreach($user->findRef() as $c=>$us){
+        echo ($c+1).". ".$us->username."<br/>";
+    }
+
 }?>
     </div>
 </div>

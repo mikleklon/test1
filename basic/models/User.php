@@ -11,7 +11,7 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
     public $password;
     public $authKey;
     public $accessToken;
-    public $referal;
+    public $referal ;
     public $referelCode;
 
     private static $users = [
@@ -152,5 +152,18 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
         }
         return null;
 
+    }
+    public function findRef(){
+        $row = (new \yii\db\Query())
+            ->select(['*'])
+            ->from('user')
+            ->where(['referal'=>$this->id])
+            ->all();
+        $res = array();
+        if($row){
+            foreach($row as $value)
+                $res[] = new static($value);
+        }
+        return $res;
     }
 }
