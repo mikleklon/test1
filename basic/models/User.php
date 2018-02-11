@@ -2,13 +2,17 @@
 
 namespace app\models;
 
-class User extends \yii\base\Object implements \yii\web\IdentityInterface
+use Codeception\Module\Yii2;
+
+class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
 {
     public $id;
     public $username;
     public $password;
     public $authKey;
     public $accessToken;
+    public $referal;
+    public $referelCode;
 
     private static $users = [
         '100' => [
@@ -33,7 +37,12 @@ class User extends \yii\base\Object implements \yii\web\IdentityInterface
      */
     public static function findIdentity($id)
     {
-        return isset(self::$users[$id]) ? new static(self::$users[$id]) : null;
+        $row = (new \yii\db\Query())
+            ->select(['*'])
+            ->from('user')
+            ->where(['id'=>$id])
+            ->one();
+        return $row ? new static($row) : null;
     }
 
     /**
@@ -41,11 +50,6 @@ class User extends \yii\base\Object implements \yii\web\IdentityInterface
      */
     public static function findIdentityByAccessToken($token, $type = null)
     {
-        foreach (self::$users as $user) {
-            if ($user['accessToken'] === $token) {
-                return new static($user);
-            }
-        }
 
         return null;
     }
@@ -58,15 +62,33 @@ class User extends \yii\base\Object implements \yii\web\IdentityInterface
      */
     public static function findByUsername($username)
     {
-        foreach (self::$users as $user) {
-            if (strcasecmp($user['username'], $username) === 0) {
-                return new static($user);
-            }
-        }
-
+        $row = (new \yii\db\Query())
+            ->select(['*'])
+            ->from('user')
+            ->where(['username'=>$username])
+            ->one();
+        if($row)
+            return new static($row);
         return null;
     }
 
+    /**
+     * @param $username
+     * @param $password
+     * @param string $referelCode
+     * @throws \yii\db\Exception
+     */
+    public static function registerUser($username, $password){
+        $user = User::checkReferelCode();
+        $sql = (new \yii\db\Query())
+            ->createCommand()->insert("user",[
+                "username" => $username,
+                "password" => $password,
+                "referal" => (!empty($user)?$user->id:0),
+                "referelCode"=> crc32(time())
+            ])
+            ->execute();
+    }
     /**
      * @inheritdoc
      */
@@ -80,7 +102,7 @@ class User extends \yii\base\Object implements \yii\web\IdentityInterface
      */
     public function getAuthKey()
     {
-        return $this->authKey;
+        return '';
     }
 
     /**
@@ -88,7 +110,7 @@ class User extends \yii\base\Object implements \yii\web\IdentityInterface
      */
     public function validateAuthKey($authKey)
     {
-        return $this->authKey === $authKey;
+        return true;
     }
 
     /**
@@ -100,5 +122,35 @@ class User extends \yii\base\Object implements \yii\web\IdentityInterface
     public function validatePassword($password)
     {
         return $this->password === $password;
+    }
+    public function validateReferal($referal){
+        return true;
+    }
+    public function setReferal($value){
+        $this->referal =  $value;
+    }
+    public function setReferelCode($value){
+        $this->referelCode =  $value;
+    }
+    public static function saveReferelCode($value){
+        $row = (new \yii\db\Query())
+            ->select(['id'])
+            ->from('user')
+            ->where(['referelCode'=>$value])
+            ->one();
+        if($row){
+            $session = \Yii::$app->session;
+            $session->set("referel",$row["id"]);
+        }
+        return User::checkReferelCode();
+    }
+    public static function checkReferelCode(){
+        $session = \Yii::$app->session;
+        $id = $session->get("referel");
+        if($id > 0){
+            return User::findIdentity($id);
+        }
+        return null;
+
     }
 }

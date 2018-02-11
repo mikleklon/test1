@@ -8,6 +8,7 @@ use yii\web\Controller;
 use yii\web\Response;
 use yii\filters\VerbFilter;
 use app\models\LoginForm;
+use app\models\RegisterForm;
 use app\models\ContactForm;
 
 class SiteController extends Controller
@@ -64,6 +65,9 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
+        $user = new \app\models\User;
+        if(Yii::$app->request->get("ref")!= "")
+            $user::saveReferelCode(Yii::$app->request->get("ref"));
         return $this->render('index');
     }
 
@@ -77,12 +81,32 @@ class SiteController extends Controller
         if (!Yii::$app->user->isGuest) {
             return $this->goHome();
         }
-
         $model = new LoginForm();
         if ($model->load(Yii::$app->request->post()) && $model->login()) {
             return $this->goBack();
         }
         return $this->render('login', [
+            'model' => $model,
+        ]);
+    }
+
+    /**
+     * @return string|Response
+     * @throws \yii\db\Exception
+     */
+    public function actionRegister()
+    {
+        if (!Yii::$app->user->isGuest) {
+            return $this->goHome();
+        }
+        $model = new RegisterForm();
+        if(Yii::$app->request->get("ref") != "")
+            $model->saveReferelCode(Yii::$app->request->get("ref"));
+
+        if ($model->load(Yii::$app->request->post()) && $model->register()) {
+            return $this->goBack();
+        }
+        return $this->render('register', [
             'model' => $model,
         ]);
     }

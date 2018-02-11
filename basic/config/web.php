@@ -47,7 +47,7 @@ $config = [
 //            'enablePrettyUrl' => true,
 //            'showScriptName' => false,
 //            'rules' => [
-//                '<view>' => 'site/page'
+//                '<view>' => 'page',
 //            ],
 //        ],
     ],
